@@ -70,9 +70,18 @@ module.exports = {
     this.selfConfig = parseConfig(target);
   },
 
+  contentFor: function (type) {
+    var json;
+    if (type === 'head') {
+      json = JSON.stringify(this.selfConfig.i18n);
+      return "<meta name='ember-i18n' content='" + json + "'>";
+    }
+  },
 
-  pathForApp: function () {
-    var trees = [], FILES = helpers.FILES, localFiles;
+
+  treeForApp: function (tree) {
+    var trees = [tree], FILES = helpers.FILES, localFiles, root;
+
     // include the native language map
     if (this.selfConfig.i18n.includeNativeLanguages) {
       trees.push(this.pickFiles(this.treeGenerator(helpers.i18nPath(helpers.SELF_DATA_PATH)), {
@@ -81,6 +90,17 @@ module.exports = {
         destDir: '/i18n'
       }));
     }
+
+    // include the helpers and other core stuff if any
+    root = helpers.i18nPath(this.project.root);
+    if(fs.existsSync(helpers.normalizePath(root, '_core'))) {
+      trees.push(this.pickFiles(root, {
+        srcDir:  '/',
+        files:   ['_core/**/*.js'],
+        destDir: '/i18n'
+      }));
+    }
+
     // make a list of the files to import for each language
     localFiles = ['' + FILES.LOCALIZED.ICU];
     if (this.selfConfig.i18n.includeCurrencies) {
@@ -89,16 +109,18 @@ module.exports = {
     if (this.selfConfig.i18n.includeLanguages) {
       localFiles.push('' + FILES.LOCALIZED.LANGUAGE_MAP);
     }
+
     // add for each enabled locale the core files
-    this.selfConfig.enabledLocales.forEach(function (locale) {
+    this.selfConfig.i18n.enabledLocales.forEach(function (locale) {
       trees.push(this.pickFiles(this.treeGenerator(helpers.i18nPath(helpers.SELF_DATA_PATH, locale)), {
         srcDir:  '/',
         files:   localFiles,
         destDir: '/i18n/' + locale
       }));
-    });
+    }, this);
+
     // add for each bundled locale the data files
-    this.selfConfig.bundledLocales.forEach(function (locale) {
+    this.selfConfig.i18n.bundledLocales.forEach(function (locale) {
       var root = helpers.i18nPath(this.project.root, locale);
       if (fs.existsSync(root)) {
         trees.push(this.pickFiles(root, {
@@ -107,16 +129,16 @@ module.exports = {
           destDir: '/i18n/' + locale
         }));
       }
-    });
+    }, this);
     return this.mergeTrees(trees);
   },
 
-  pathForPublic: function () {
+  treeForPublic: function () {
     var trees = [], locales;
     // make the list of enabled but not bundled locales
     locales = this.selfConfig.i18n.enabledLocales.filter(function (locale) {
       return this.selfConfig.i18n.bundledLocales.indexOf(locale) === -1;
-    });
+    }, this);
     // add for each enabled locale which is not bundled the data files
     locales.forEach(function (locale) {
       var root = helpers.i18nPath(this.project.root, locale);
@@ -127,7 +149,7 @@ module.exports = {
           destDir: '/i18n/' + locale
         }));
       }
-    });
+    }, this);
     return this.mergeTrees(trees);
   }
 };

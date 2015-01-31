@@ -31,8 +31,8 @@ module.exports = {
         return helpers.I18N_DIR;
       },
 
-      __context_name__: function(options){
-        return options.dasherizedModuleName.replace(/[\/-]/g, '_');
+      __context_name__: function (options) {
+        return options.dasherizedModuleName.replace(/[_\/\.-]+/g, '_');
       }
     };
   }
