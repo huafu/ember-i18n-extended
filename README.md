@@ -1,4 +1,4 @@
-# Ember-i18n-and-l10n
+# ember-i18n-extended
 
 This README outlines the details of collaborating on this Ember addon.
 

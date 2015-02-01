@@ -1,7 +1,7 @@
 /* globals require */
 import Ember from 'ember';
 import computed from './computed';
-import compileContext from './compile-context';
+import I18nContextNode from './context-node';
 
 /**
  * @class I18nContext
@@ -70,7 +70,15 @@ export default Ember.Object.extend({
     if (arguments.length > 1) {
       // it's a set, we need to compile it
       Ember.run.next(this.get('service'), 'trigger', 'didLoadContext', this);
-      return compileContext(value);
+      if (value) {
+        return I18nContextNode.create({
+          nodeContext: this,
+          nodeLocale:  this.get('locale')
+        });
+      }
+      else {
+        return null;
+      }
     }
     else {
       // it's a get, we need to load our data

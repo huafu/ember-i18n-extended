@@ -28,8 +28,8 @@ export default Ember.Object.extend({
    * @property modulePath
    * @type {string}
    */
-  modulePath: computed.ro('code', function () {
-    return ENV.modulePrefix + '/i18n/' + this.get('code');
+  modulePath: computed.ro('code', 'service.dataFilesPath', function () {
+    return ENV.modulePrefix + '/' + this.get('service.dataFilesPath') + '/' + this.get('code');
   }),
 
   /**
@@ -37,8 +37,8 @@ export default Ember.Object.extend({
    * @property baseUrl
    * @type {string}
    */
-  baseUrl: computed.ro('code', function () {
-    return ENV.baseURL + 'i18n/' + this.get('code');
+  baseUrl: computed.ro('code', 'service.dataFilesPath', function () {
+    return ENV.baseURL + this.get('service.dataFilesPath') + '/' + this.get('code');
   }),
 
   /**

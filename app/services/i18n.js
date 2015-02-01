@@ -12,11 +12,18 @@ export default Ember.Object.extend(Ember.Evented, {
   /**
    * Our i18n configuration
    * @property config
-   * @type {{enabledLocales: Array.<string>, defaultLocale: string, bundledLocales: Array.<string>, includeCurrencies: boolean, includeLanguages: boolean, includeNativeLanguages: boolean}}
+   * @type {{enabledLocales: Array.<string>, defaultLocale: string, bundledLocales: Array.<string>, includeCurrencies: boolean, includeLanguages: boolean, includeNativeLanguages: boolean, path: string}}
    */
   config: computed.ro(function () {
     return JSON.parse(Ember.$('meta[name="ember-i18n"]').attr('content'));
   }),
+
+  /**
+   * The path to the i18n files
+   * @property dataFilesPath
+   * @type {string}
+   */
+  dataFilesPath: computed.readOnly('config.path'),
 
   /**
    * The default locale

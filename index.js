@@ -24,6 +24,7 @@ function parseConfig(app) {
   if (!i18nConf.hasOwnProperty('includeNativeLanguages')) {
     i18nConf.includeNativeLanguages = true;
   }
+  i18nConf.path = helpers.I18N_DIR;
   if (!i18nConf.defaultLocale) {
     i18nConf.defaultLocale = defaultLocale;
   }
@@ -58,7 +59,7 @@ function parseConfig(app) {
 }
 
 module.exports = {
-  name: 'ember-i18n-and-l10n',
+  name: 'ember-i18n-extended',
 
   /**
    * @type Config
