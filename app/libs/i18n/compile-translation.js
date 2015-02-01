@@ -1,6 +1,7 @@
 import Ember from 'ember';
 import computed from './computed';
 import translatePath from './translate-path';
+import ENV from '../../config/environment';
 
 var map = Ember.EnumerableUtils.map;
 var slice = Array.prototype.slice;
@@ -21,38 +22,39 @@ function unescapeParam(param) {
   return param.replace(PARAM_REPLACE, ',');
 }
 
-function addParam(params, index) {
-  if (parseInt(index) > params.length) {
-    params.push('p' + (params.length + 1));
+function addParam(args, index) {
+  if (index == null) {
+    index = ++args.index;
   }
+  else {
+    index = parseInt(index);
+  }
+  args.count = Math.max(index, args.count);
+  return 'a[' + (index - 1) + ']';
 }
 
-function pipeHelper(helperName, helperParams, pipe, params, paramIndex) {
-  var selfPipe = [], parts = helperParams.split(PARAMS_SPLITTER), param, match;
+function pipeHelper(name, params, args) {
+  var selfPipe = [], parts = params.split(PARAMS_SPLITTER), param, match;
 
   while (parts.length) {
-    param = unescapeParam(parts.shift() + parts.length ? parts.shift() : '');
+    param = unescapeParam(parts.shift() + (parts.length ? parts.shift() : ''));
     match = param.match(PARAM_PARSER);
     if (match[1] !== null) {
       // it's a parameter
       if (match[1]) {
         // it's an indexed parameter
-        selfPipe.push('p' + match[1]);
-        addParam(params, match[1]);
+        selfPipe.push(addParam(args, match[1]));
       }
       else {
         // it's the next parameter
-        selfPipe.push('p' + (++paramIndex));
-        addParam(params, paramIndex);
+        selfPipe.push(addParam(args));
       }
     }
     else {
       selfPipe.push(JSON.stringify(match[2]));
     }
   }
-
-  pipe.push(helperName + '(' + selfPipe.join(',') + ')');
-  return paramIndex;
+  return name + '(' + selfPipe.join(',') + ')';
 }
 
 function makeDynamic(node, deps, method) {
@@ -64,10 +66,11 @@ function makeDynamic(node, deps, method) {
 
     translateFunction: computed.ro.apply(
       null, keys.concat(['method', function () {
+        var k = this.get('node').getProperties(deps), m = this.get('method');
         return function () {
           var args = slice.call(arguments);
-          args.push(this.getProperties(keys));
-          return this.get('method').apply(this, args);
+          args.push(k);
+          return m.apply(this, args);
         };
       }])
     )
@@ -75,8 +78,8 @@ function makeDynamic(node, deps, method) {
 }
 
 export default function (node, key, value) {
-  var isStatic, pipe, helpers, parts, match, str, params, keys,
-    paramIndex, helperName, helperParams, otherKeys, source;
+  var isStatic, pipe, helpers, parts, match, str, args,
+    helperName, helperParams, otherKeys, source;
   helpers = node.get('nodeLocale.service.helpers');
   parts = value.split(SPLITTER);
   if (parts.length === 1) {
@@ -86,11 +89,12 @@ export default function (node, key, value) {
   pipe = [];
   isStatic = true;
   otherKeys = [];
-  paramIndex = 0;
-  params = [];
+  args = Object.create(null);
+  args.index = 0;
+  args.count = 0;
   while (parts.length) {
     if (isStatic) {
-      str = unescapeString(parts.shift() + parts.length ? parts.shift() : '');
+      str = unescapeString(parts.shift() + (parts.length ? parts.shift() : ''));
       if (str) {
         pipe.push(JSON.stringify(str));
       }
@@ -99,8 +103,7 @@ export default function (node, key, value) {
       str = parts.shift();
       if (str === '') {
         // it's the next parameter
-        pipe.push('p' + (++paramIndex));
-        addParam(params, paramIndex);
+        pipe.push(addParam(args));
       }
       else {
         // it's a dynamic value
@@ -110,8 +113,7 @@ export default function (node, key, value) {
         }
         if (match[1]) {
           // it's a parameter number
-          pipe.push('p' + match[1]);
-          addParam(params, match[1]);
+          pipe.push(addParam(args, match[1]));
         }
         else if (match[2]) {
           // it is a helper call
@@ -120,11 +122,12 @@ export default function (node, key, value) {
           if (!helpers[helperName]) {
             return new Error('unknown i18n helper `' + helperName + '` in `' + str + '`');
           }
-          paramIndex = pipeHelper(helperName, helperParams, pipe, params, paramIndex);
-          if (paramIndex instanceof Error) {
-            paramIndex.message += ' in `' + str + '`';
-            return paramIndex;
+          source = pipeHelper(helperName, helperParams, args);
+          if (source instanceof Error) {
+            source.message += ' in `' + str + '`';
+            return str;
           }
+          pipe.push(source);
         }
         else if (match[4]) {
           // it is a link to another translation
@@ -133,7 +136,7 @@ export default function (node, key, value) {
             return new Error('wrong linked key: `' + match[4] + '`');
           }
           otherKeys.push(str);
-          pipe.push('k.' + str);
+          pipe.push('k(' + JSON.stringify(str) + ')');
         }
       }
     }
@@ -141,16 +144,16 @@ export default function (node, key, value) {
   }
   // build the function if it is a function
   if (pipe.length) {
-    source = 'return ' + pipe.join('+') + ';';
+    source = 'var a=[].slice.call(arguments);';
     if (otherKeys.length) {
-      source = 'var k=arguments[arguments.length-1];' + source;
+      source += 'var p=' + (ENV.environment === 'production') ? '1' : '0';
+      source += ',d=a.pop();var k=function(k){var s=d[k],t=typeof s;return t==="string"?s:(t==="function"?s.apply(this,a):(p?"?":k));};';
     }
-    if (params.length) {
-      source = new Function(params.join(','), source);
+    source += 'return ' + pipe.join('+') + ';';
+    if (ENV.LOG_I18N_COMPILATIONS) {
+      Ember.debug('[i18n] Compiled key `' + node.get('nodePath') + '.' + key + '`: ' + source);
     }
-    else {
-      source = new Function(source);
-    }
+    source = new Function(source);
     if (otherKeys.length) {
       source = makeDynamic(node, otherKeys, source);
     }

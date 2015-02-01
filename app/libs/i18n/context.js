@@ -73,7 +73,8 @@ export default Ember.Object.extend({
       if (value) {
         return I18nContextNode.create({
           nodeContext: this,
-          nodeLocale:  this.get('locale')
+          nodeLocale:  this.get('locale'),
+          nodeValue: value
         });
       }
       else {

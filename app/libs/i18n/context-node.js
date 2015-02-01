@@ -5,13 +5,6 @@ import isValidKey from './is-valid-key';
 import isLink from './is-link';
 import compileTranslation from './compile-translation';
 
-var hasOwn = Object.prototype.hasOwnProperty;
-
-function cloneFunction(func) {
-  return function () {
-    return func.apply(this, arguments);
-  };
-}
 
 var I18nContextNode;
 
@@ -110,10 +103,11 @@ I18nContextNode = Ember.Object.extend({
                 '[i18n] Error compiling key `' + this.get('nodePath') + '.' + key +
                 '`: ' + res.message + '.'
               );
+              res = null;
             }
             else if (res && res.i18nDynamic) {
               this.set('dynamicKeys.' + key, res);
-              Ember.oneWay(this, 'dynamicKeys.' + key + '.translateFunction', key);
+              Ember.oneWay(this, key, 'dynamicKeys.' + key + '.translateFunction');
               // we do not want to cache
               return this.get(key);
             }// if res instanceof Error
@@ -124,18 +118,19 @@ I18nContextNode = Ember.Object.extend({
           }
           else if (typeof val === 'object') {
             if (isLink(val)) {
-              linkedPath = translatePath(val);
+              linkedPath = translatePath(val.$);
               if (linkedPath) {
                 // creates a new one way binding to our linked path and return so that it won't be set
-                Ember.oneWay(this, linkedPath, key);
+                Ember.oneWay(this, key, linkedPath);
                 return this.get(key);
               }
               else {
                 // log it as wrong linked path
                 Ember.warn(
-                  '[i18n] Wrong link path `' + val + '` (defined at `' +
+                  '[i18n] Wrong link path `' + val.$ + '` (defined at `' +
                   this.get('nodePath') + '.' + key + '`).'
                 );
+                res = null;
               }
             }
             else {
@@ -152,6 +147,7 @@ I18nContextNode = Ember.Object.extend({
               '[i18n] Wrong type of value for the translation key `' +
               this.get('nodePath') + '.' + key + '`.'
             );
+            res = null;
           } // type switch
         } //if obj[key]
         else if (obj.$) {
@@ -159,7 +155,7 @@ I18nContextNode = Ember.Object.extend({
           linkedPath = translatePath(obj.$, this, '$');
           if (linkedPath) {
             // creates a new one way binding to our linked path and return so that it won't be set
-            Ember.oneWay(this, linkedPath, key);
+            Ember.oneWay(this, key, linkedPath + '.' + key);
             return this.get(key);
           }
           else {
@@ -168,6 +164,7 @@ I18nContextNode = Ember.Object.extend({
               '[i18n] Wrong merge path `' + val + '` (defined at `' +
               this.get('nodePath') + '.$`).'
             );
+            res = null;
           } // if linkedPath
         } // if obj[key]
       } // if obj
@@ -178,6 +175,7 @@ I18nContextNode = Ember.Object.extend({
         '[i18n] Wrong key in `' + this.get('nodePath') + '`: `' + key +
         '`. Keys must be lowercase and containing only letters, numbers, `$` or `_`.'
       );
+      res = null;
     } // if valid key
     // save so that it is cached and return
     this.set(key, res);
