@@ -1,10 +1,12 @@
 import Ember from 'ember';
 import computed from './computed';
 import translatePath from './translate-path';
+import I18nContextNode from './context-node';
 import ENV from '../../config/environment';
 
 var map = Ember.EnumerableUtils.map;
 var slice = Array.prototype.slice;
+//var hasOwn = Object.prototype.hasOwnProperty;
 
 var SPLITTER = /(^|[^\{])\{([^}]*)}/g;
 var PARSER = /^(?:\$([0-9]+)|([a-z][a-zA-Z0-9]*):(.+)|((?:\/|\.\/|\.\.\/).+))$/;
@@ -30,7 +32,32 @@ function addParam(args, index) {
     index = parseInt(index);
   }
   args.count = Math.max(index, args.count);
-  return 'a[' + (index - 1) + ']';
+  return '_(a[' + (index - 1) + '])';
+}
+
+//var METHODIFY_CACHE = Object.create(null);
+export function methodify(node, key, method) {
+  var path, func;
+  if (typeof method !== 'function') {
+    if (method instanceof I18nContextNode) {
+      return method;
+    }
+    func = function () {
+      return method;
+    };
+  }
+  else if (method.i18nMethodified) {
+    return method;
+  }
+  else {
+    func = method;
+  }
+  path = node.get('nodePath') + '.' + key;
+  func.toString = func.valueOf = function () {
+    return path;
+  };
+  func.i18nMethodified = true;
+  return func;
 }
 
 function pipeHelper(name, params, args) {
@@ -57,7 +84,7 @@ function pipeHelper(name, params, args) {
   return name + '(' + selfPipe.join(',') + ')';
 }
 
-function makeDynamic(node, deps, method) {
+function makeDynamic(node, nodeKey, deps, method) {
   var keys = map(deps, function (key) {
     return 'node.' + key;
   });
@@ -67,11 +94,11 @@ function makeDynamic(node, deps, method) {
     translateFunction: computed.ro.apply(
       null, keys.concat(['method', function () {
         var k = this.get('node').getProperties(deps), m = this.get('method');
-        return function () {
+        return methodify(node, nodeKey, function () {
           var args = slice.call(arguments);
           args.push(k);
           return m.apply(this, args);
-        };
+        });
       }])
     )
   }).create({node: node, method: method});
@@ -84,7 +111,7 @@ export default function (node, key, value) {
   parts = value.split(SPLITTER);
   if (parts.length === 1) {
     // return just the string if it is static
-    return unescapeString(parts[0]);
+    return methodify(node, key, unescapeString(parts[0]));
   }
   pipe = [];
   isStatic = true;
@@ -125,7 +152,7 @@ export default function (node, key, value) {
           source = pipeHelper(helperName, helperParams, args);
           if (source instanceof Error) {
             source.message += ' in `' + str + '`';
-            return str;
+            return source;
           }
           pipe.push(source);
         }
@@ -136,7 +163,7 @@ export default function (node, key, value) {
             return new Error('wrong linked key: `' + match[4] + '`');
           }
           otherKeys.push(str);
-          pipe.push('k(' + JSON.stringify(str) + ')');
+          pipe.push('_(k(' + JSON.stringify(str) + '))');
         }
       }
     }
@@ -144,7 +171,7 @@ export default function (node, key, value) {
   }
   // build the function if it is a function
   if (pipe.length) {
-    source = 'var a=[].slice.call(arguments);';
+    source = 'var a=[].slice.call(arguments),_=function(d){return d==null?"?":d;};';
     if (otherKeys.length) {
       source += 'var p=' + (ENV.environment === 'production') ? '1' : '0';
       source += ',d=a.pop();var k=function(k){var s=d[k],t=typeof s;return t==="string"?s:(t==="function"?s.apply(this,a):(p?"?":k));};';
@@ -155,12 +182,15 @@ export default function (node, key, value) {
     }
     source = new Function(source);
     if (otherKeys.length) {
-      source = makeDynamic(node, otherKeys, source);
+      source = makeDynamic(node, key, otherKeys, source);
+    }
+    else {
+      source = methodify(node, key, source);
     }
     return source;
   }
   else {
     // just return an empty string
-    return '';
+    return methodify(node, key, '');
   }
 }

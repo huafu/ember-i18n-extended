@@ -4,6 +4,7 @@ import translatePath from './translate-path';
 import isValidKey from './is-valid-key';
 import isLink from './is-link';
 import compileTranslation from './compile-translation';
+import {methodify} from './compile-translation';
 
 
 var I18nContextNode;
@@ -178,6 +179,7 @@ I18nContextNode = Ember.Object.extend({
       res = null;
     } // if valid key
     // save so that it is cached and return
+    res = methodify(this, key, res);
     this.set(key, res);
     return res;
   }
