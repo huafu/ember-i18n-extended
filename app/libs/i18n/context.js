@@ -102,7 +102,9 @@ export default Ember.Object.extend({
     contextNotFound = Ember.run.bind(this, function () {
       Ember.warn(
         '[i18n] Context `' + this.get('name') + '` not found for locale `' +
-        this.get('locale.code') + '`'
+        this.get('locale.code') + '`. '+
+        'This could happen if you forgot to prepend a full path to a key with `/` in one of your template, '+
+          'or if you yet didn\'t set that key in the appropriate i18n context file.'
       );
       this.setProperties({
         isLoading: false,

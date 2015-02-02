@@ -8,6 +8,7 @@ function computed() {
 
 computed.readOnly = ecomp.readOnly;
 computed.bool = ecomp.bool;
+computed.oneWay = ecomp.oneWay;
 
 computed.ro = function () {
   return ecomp.apply(null, arguments).readOnly();

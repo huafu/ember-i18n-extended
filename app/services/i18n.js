@@ -2,6 +2,8 @@ import Ember from 'ember';
 import I18nLocale from '../libs/i18n/locale';
 import computed from '../libs/i18n/computed';
 
+var map = Ember.EnumerableUtils.map;
+
 
 /**
  * @class I18nService
@@ -33,11 +35,25 @@ export default Ember.Object.extend(Ember.Evented, {
   defaultLocale: computed.readOnly('config.defaultLocale'),
 
   /**
+   * The fallback locale
+   * @property fallbackLocale
+   * @type {string}
+   */
+  fallbackLocale: computed.readOnly('config.fallbackLocale'),
+
+  /**
    * List of bundled locales
    * @property bundledLocales
    * @type {Ember.Array.<string>}
    */
   bundledLocales: computed.readOnlyArray('config.bundledLocales'),
+
+  /**
+   * The current locale
+   * @property currentLocale
+   * @type {string}
+   */
+  currentLocale: computed.oneWay('defaultLocale'),
 
   /**
    * Enabled locales
@@ -86,6 +102,25 @@ export default Ember.Object.extend(Ember.Evented, {
       }
     }).create({});
   }),
+
+  /**
+   * All node locales
+   * @property nodeLocales
+   * @type {Ember.Array.<I18nLocale>}
+   */
+  nodeLocales: computed.ro('currentLocale', 'fallbackLocale', function () {
+    var locales = [], opt = this.getProperties('currentLocale', 'fallbackLocale');
+    if (opt.currentLocale) {
+      locales.push(opt.currentLocale);
+    }
+    if (opt.fallbackLocale && locales.indexOf(opt.fallbackLocale) === -1) {
+      locales.push(opt.fallbackLocale);
+    }
+    return Ember.A(map(locales, function (locale) {
+      return Ember.Object.create({nodeLocale: this.get('locales.' + locale)});
+    }, this));
+  }),
+
 
   /**
    * Handle the load of a context

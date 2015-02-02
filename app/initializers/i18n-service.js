@@ -1,3 +1,9 @@
+import {t} from '../helpers/t';
+import Ember from 'ember';
+import '../libs/i18n/ember-overrides';
+
+Ember.Handlebars.registerHelper('t', t);
+
 export function initialize(container, application) {
   application.inject('route', 'i18nService', 'service:i18n');
   application.inject('controller', 'i18nService', 'service:i18n');
