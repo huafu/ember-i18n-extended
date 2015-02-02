@@ -24,6 +24,19 @@ export default Ember.Object.extend({
   code: null,
 
   /**
+   * Helpers
+   * @property helpers
+   * @type {Object}
+   */
+  helpers: computed.ro('code', 'service.helpers', function () {
+    var self = this.get('service.helpers.' + this.get('code')),
+      base = this.get('service.helpers._base'), res = Object.create(null);
+    Ember.merge(res, base);
+    Ember.merge(res, self);
+    return res;
+  }),
+
+  /**
    * Path to the module version
    * @property modulePath
    * @type {string}

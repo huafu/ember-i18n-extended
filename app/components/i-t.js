@@ -33,26 +33,45 @@ export default Ember.Component.extend({
    * @property params
    * @type {Array}
    */
-  params: computed(function (key, value) {
+  params: computed('helperName', function (key, value) {
     var res, i, param;
     if (arguments.length > 1) {
-      return this._fixedParams = value;
+      return value || [];
     }
     else {
-      if (this._fixedParams) {
-        return this._fixedParams;
-      }
-      else {
-        res = [];
-        i = 1;
-        do {
-          param = this.get('p' + i);
-          i++;
-        } while (param !== undefined && res.push(param));
-        return res;
-      }
+      // this is only in the case we are used directly as a component
+      res = [];
+      i = 1;
+      do {
+        param = this.get('p' + i);
+        i++;
+      } while (param !== undefined && res.push(param));
+      return res;
     }
   }),
+
+  /**
+   * Resolved parameters when coming from the `t` helper
+   * @property resolvedParams
+   * @type {Array}
+   */
+  resolvedParams: computed.ro('params', function () {
+    var i, params = this.get('params'), resolved, param;
+    if (!this.get('helperName')) {
+      return params;
+    }
+    resolved = [];
+    for (i = 0; i < params.length; i++) {
+      param = params[i];
+      // TODO: use Ember Stream, but it is not yet exposed
+      if (param && param.isStream === true) {
+        param = param.value();
+      }
+      resolved.push(param);
+    }
+    return resolved;
+  }),
+
 
   /**
    * The resolved translation
@@ -71,9 +90,11 @@ export default Ember.Component.extend({
    * @type {Ember.Array.<string>}
    */
   possibleTranslations: computed.ro(
-    'possibleKeys.@each', 'params.@each', 'i18n.nodeLocales.@each',
+    'possibleKeys.@each', 'resolvedParams.@each', 'i18n.nodeLocales.@each',
     function () {
-      var keys = this.get('possibleKeys'), params = (this.get('params') || []), helpers = this.get('i18n.helpers');
+      var keys = this.get('possibleKeys'),
+        params = (this.get('resolvedParams') || []),
+        helpers = this.get('i18n.currentHelpers');
       var translations = this.get('i18n.nodeLocales').reduce(function (previous, objWithNodeLocale) {
         return keys.reduce(function (previous, key) {
           var trFunc = objWithNodeLocale.get(translatePath(key));
@@ -101,14 +122,12 @@ export default Ember.Component.extend({
     }
   }),
 
-
   /**
    * The locale node from our service
    * @property nodeLocale
    * @type {I18nLocale}
    */
   nodeLocale: computed.readOnly('i18n.currentLocale'),
-
 
   /**
    * The fixed context from the controller
@@ -154,6 +173,8 @@ export default Ember.Component.extend({
           parts.pop();
         }
       }
+      // from common context?
+      res.push('/' + this.get('i18n.commonContextName') + '.' + key);
       if (key.indexOf('.') !== -1) {
         // suppose the coder forgot to put the `/`
         res.push('/' + key);

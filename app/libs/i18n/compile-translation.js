@@ -10,7 +10,7 @@ var slice = Array.prototype.slice;
 
 var SPLITTER = /(^|[^\{])\{([^}]*)}/g;
 var PARSER = /^(?:\$([0-9]+)|([a-z][a-zA-Z0-9]*):(.+)|((?:\/|\.\/|\.\.\/).+))$/;
-var PARAMS_SPLITTER = /(^|[^\\],)/g;
+var PARAMS_SPLITTER = /(^|[^\\]),/g;
 var PARAM_PARSER = /^(?:\$([0-9]*)|(.*))$/;
 
 var STRING_REPLACE = /\{\{/g;
@@ -62,11 +62,11 @@ export function methodify(node, key, method) {
 
 function pipeHelper(name, params, args) {
   var selfPipe = [], parts = params.split(PARAMS_SPLITTER), param, match;
-
   while (parts.length) {
     param = unescapeParam(parts.shift() + (parts.length ? parts.shift() : ''));
+    PARAM_PARSER.lastIndex = 0;
     match = param.match(PARAM_PARSER);
-    if (match[1] !== null) {
+    if (match[1] != null) {
       // it's a parameter
       if (match[1]) {
         // it's an indexed parameter
@@ -81,7 +81,7 @@ function pipeHelper(name, params, args) {
       selfPipe.push(JSON.stringify(match[2]));
     }
   }
-  return name + '(' + selfPipe.join(',') + ')';
+  return 'this.' + name + '(' + selfPipe.join(',') + ')';
 }
 
 function makeDynamic(node, nodeKey, deps, method) {
@@ -107,7 +107,7 @@ function makeDynamic(node, nodeKey, deps, method) {
 export default function (node, key, value) {
   var isStatic, pipe, helpers, parts, match, str, args,
     helperName, helperParams, otherKeys, source;
-  helpers = node.get('nodeLocale.service.helpers');
+  helpers = node.get('nodeLocale.service.helpers._base');
   parts = value.split(SPLITTER);
   if (parts.length === 1) {
     // return just the string if it is static
@@ -134,6 +134,7 @@ export default function (node, key, value) {
       }
       else {
         // it's a dynamic value
+        PARSER.lastIndex = 0;
         match = str.match(PARSER);
         if (!match) {
           return new Error('wrong data between `{` and `}`, if you need to output `{`, double it (given: `' + str + '`)');
@@ -171,10 +172,10 @@ export default function (node, key, value) {
   }
   // build the function if it is a function
   if (pipe.length) {
-    source = 'var a=[].slice.call(arguments),_=function(d){return d==null?"?":d;};';
+    source = 'var a=[].slice.call(arguments),_=function(d){return d==null?"":d;};';
     if (otherKeys.length) {
       source += 'var p=' + (ENV.environment === 'production') ? '1' : '0';
-      source += ',d=a.pop();var k=function(k){var s=d[k],t=typeof s;return t==="string"?s:(t==="function"?s.apply(this,a):(p?"?":k));};';
+      source += ',d=a.pop();var k=function(k){var s=d[k],t=typeof s;return t==="string"?s:(t==="function"?s.apply(this,a):(p?"":k));};';
     }
     source += 'return ' + pipe.join('+') + ';';
     if (ENV.LOG_I18N_COMPILATIONS) {

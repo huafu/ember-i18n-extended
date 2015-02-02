@@ -10,6 +10,7 @@ export default function (path) {
     return CACHE[path];
   }
   else {
+    PARSER.lastIndex = 0;
     matches = path.match(PARSER);
     if (matches) {
       if (matches[1] === '/') {

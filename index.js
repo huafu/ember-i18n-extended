@@ -31,6 +31,12 @@ function parseConfig(app) {
   if (!i18nConf.fallbackLocale) {
     i18nConf.fallbackLocale = i18nConf.defaultLocale;
   }
+  if (!i18nConf.defaultDateFormat) {
+    i18nConf.defaultDateFormat = 'MEDIUM';
+  }
+  if (!i18nConf.commonContextName) {
+    i18nConf.commonContextName = 'common';
+  }
   if (!i18nConf.enabledLocales) {
     i18nConf.enabledLocales = helpers.listProjectLocales(app.project.root, null, false, true);
   }
@@ -98,6 +104,13 @@ module.exports = {
       }));
     }
 
+    // include our core helpers
+    trees.push(this.pickFiles(this.treeGenerator(helpers.i18nPath(helpers.SELF_DATA_PATH)), {
+      srcDir:  '/',
+      files:   ['_core/helpers/*.js'],
+      destDir: '/i18n'
+    }));
+
     // include the helpers and other core stuff if any
     root = helpers.i18nPath(this.project.root);
     if (fs.existsSync(helpers.normalizePath(root, '_core'))) {
@@ -119,15 +132,8 @@ module.exports = {
 
     // add for each enabled locale the core files
     this.selfConfig.i18n.enabledLocales.forEach(function (locale) {
-      if (locale === helpers.DEV_LOCALE) {
-        if (this.selfConfig.i18n.enabledLocales.indexOf('en') === -1) {
-          locale = 'en';
-        }
-        else {
-          return;
-        }
-      }
-      trees.push(this.pickFiles(this.treeGenerator(helpers.i18nPath(helpers.SELF_DATA_PATH, locale)), {
+      var fakeLocale = locale === helpers.DEV_LOCALE ? 'en' : locale;
+      trees.push(this.pickFiles(this.treeGenerator(helpers.i18nPath(helpers.SELF_DATA_PATH, fakeLocale)), {
         srcDir:  '/',
         files:   localFiles,
         destDir: '/i18n/' + locale
