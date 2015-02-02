@@ -132,7 +132,7 @@ export default Ember.Object.extend({
     }
     else {
       // it is not bundled, we need to download it
-      Ember.$.get(this.get('url'))
+      Ember.$.get(this.get('url'), null, null, 'text')
         .done(Ember.run.bind(this, function (data) {
           this.setProperties({
             isLoading: false,

@@ -3,6 +3,8 @@ import computed from '../libs/i18n/computed';
 import translatePath from '../libs/i18n/translate-path';
 import ENV from '../config/environment';
 
+var snake = Ember.String.underscore;
+
 /**
  * @class I18nTranslationComponent
  * @alias ITComponent
@@ -162,13 +164,14 @@ export default Ember.Component.extend({
     }
     else if ((def = this.get('fixedContext'))) {
       // we got a fixed context
-      res = ['/' + def + '.' + key];
+      res = ['/' + snake(def) + '.' + key];
     }
     else {
       // try to prepend each part of the route
       res = [];
       def = this.get('defaultContext');
       if (def) {
+        def = snake(def);
         parts = def.split('.');
         while (parts.length) {
           res.push('/' + parts.join('.') + '.' + key);
