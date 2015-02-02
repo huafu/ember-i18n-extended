@@ -5,6 +5,7 @@ import computed from '../libs/i18n/computed';
 import ENV from '../config/environment';
 
 var map = Ember.EnumerableUtils.map;
+var forEach = Ember.EnumerableUtils.forEach;
 var slice = [].slice;
 
 function protectStringHelper(helper) {
@@ -97,6 +98,28 @@ export default Ember.Object.extend(Ember.Evented, {
    * @type {Ember.Array.<string>}
    */
   enabledLocales: computed.readOnlyArray('config.enabledLocales'),
+
+  /**
+   * List of all native languages
+   * @property nativeLanguages
+   * @type {Ember.Array.<{code: string, name: string}>}
+   */
+  nativeLanguages: computed.ro('config.includeNativeLanguages', 'enabledLocales', function () {
+    var res = [], langMap, locales;
+    if (this.get('config.includeNativeLanguages')) {
+      locales = this.get('enabledLocales');
+      langMap = this.get('helpers._base._langMap');
+      if (ENV.environment === 'development' || ENV.environment === 'test') {
+        res.push(Ember.Object.create({code: 'dev', name: '[DEVELOPMENT]'}));
+      }
+      forEach(Ember.keys(langMap), function (key) {
+        if (locales.indexOf(key) !== -1) {
+          res.push(Ember.Object.create({code: key, name: langMap[key]}));
+        }
+      });
+    }
+    return Ember.A(res);
+  }),
 
   /**
    * Known contexts

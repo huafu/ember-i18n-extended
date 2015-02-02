@@ -7,6 +7,8 @@ import ENV from '../config/environment';
  * @class I18nTranslationComponent
  * @alias ITComponent
  * @extends Ember.Component
+ *
+ * @property {I18nService} i18nService
  */
 export default Ember.Component.extend({
   /**
@@ -189,7 +191,7 @@ export default Ember.Component.extend({
    * @type {I18nService}
    */
   i18n: computed.ro(function () {
-    return this.container.lookup('service:i18n');
+    return this.i18nService || this.container.lookup('service:i18n');
   }),
 
 
