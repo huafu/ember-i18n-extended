@@ -223,6 +223,36 @@ export default Ember.Object.extend(Ember.Evented, {
     return this.get('locales.' + this.get('currentLocale'));
   }),
 
+  /**
+   * Translates the given i18n key full path using optional given arguments
+   *
+   * @method translate
+   * @param {string} key
+   * @param {*} [args...]
+   * @return {Promise}
+   */
+  translate: function (key) {
+    var args = slice.call(arguments, 1);
+    var node = this.get('localeNode.' + key);
+    return node
+      .then(function () {
+        return node.get('translateFunction').apply(null, args);
+      });
+  },
+
+  /**
+   * Synchronized version of `translate`. You'll always get a result, but if the context files are
+   * not yet loaded you'll get an empty string (or the key path in dev/test).
+   *
+   * @method translateSync
+   * @param {string} key
+   * @param {*} [args...]
+   * @return {string}
+   */
+  translateSync: function (key) {
+    var args = slice.call(arguments, 1);
+    return this.get('localeNode.' + key + '.translateFunction').apply(null, args);
+  },
 
   logDebugInfo: Ember.on('init', function () {
     Ember.debug(
