@@ -1,4 +1,5 @@
 import Ember from 'ember';
+import computed from './computed';
 
 Ember.Controller.reopen({
   /**
@@ -13,11 +14,8 @@ Ember.Controller.reopen({
    * @property i18nContext
    * @type {string}
    */
-  i18nContext: Ember.computed('parentController.i18nContext', function (key, value, oldValue) {
-    if (arguments.length < 2 && oldValue === undefined) {
-      value = this.get('parentController.i18nContext');
-    }
-    return value;
+  i18nContext: computed.overridable('parentController.i18nContext', function () {
+    return this.get('parentController.i18nContext');
   })
 });
 
@@ -37,7 +35,7 @@ Ember.Route.reopen({
     i18nExtendedSetupDefaultContext: function () {
       var ctrl = this.controllerFor(this.controllerName || this.routeName);
       if (!ctrl.get('i18nDefaultContext')) {
-        ctrl.set('i18nDefaultContext', this.controllerName || this.routeName);
+        ctrl.set('i18nDefaultContext', this.routeName || this.controllerName);
       }
     }
   }

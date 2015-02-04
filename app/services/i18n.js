@@ -1,13 +1,18 @@
 /* globals require */
 import Ember from 'ember';
-import I18nLocale from '../libs/i18n/locale';
+import I18nTreeLocaleNode from '../libs/i18n/tree/locale-node';
 import computed from '../libs/i18n/computed';
 import ENV from '../config/environment';
 
-var map = Ember.EnumerableUtils.map;
+
 var forEach = Ember.EnumerableUtils.forEach;
 var slice = [].slice;
 
+/**
+ * Used to protect a string helper from being called with wrong arguments
+ * @param helper
+ * @return {Function}
+ */
 function protectStringHelper(helper) {
   return function () {
     var args = slice.call(arguments);
@@ -20,9 +25,6 @@ function protectStringHelper(helper) {
     else if (typeof args[0] !== 'string') {
       Ember.warn('[i18n] Called a string helper with `' + args[0] + '` instead of a string.');
       args[0] = '' + args[0];
-    }
-    if (typeof args[0] !== 'string') {
-      args[0] = args[0].toString();
     }
     return helper.apply(null, args);
   };
@@ -100,6 +102,20 @@ export default Ember.Object.extend(Ember.Evented, {
   enabledLocales: computed.readOnlyArray('config.enabledLocales'),
 
   /**
+   * Show the key path when a translation is missing?
+   * @property showKeyWhenMissing
+   * @type {boolean}
+   */
+  showKeyWhenMissing: computed.anyDefined('config.showKeyWhenMissing', 'isDevOrTestEnv'),
+
+  /**
+   * Are we in dev or test env?
+   * @property isDevOrTestEnv
+   * @type {boolean}
+   */
+  isDevOrTestEnv: ENV.environment === 'development' || ENV.environment === 'test',
+
+  /**
    * List of all native languages
    * @property nativeLanguages
    * @type {Ember.Array.<{code: string, name: string}>}
@@ -109,7 +125,7 @@ export default Ember.Object.extend(Ember.Evented, {
     if (this.get('config.includeNativeLanguages')) {
       locales = this.get('enabledLocales');
       langMap = this.get('helpers._base._langMap');
-      if (ENV.environment === 'development' || ENV.environment === 'test') {
+      if (this.get('isDevOrTestEnv')) {
         res.push(Ember.Object.create({code: 'dev', name: '[DEVELOPMENT]'}));
       }
       forEach(Ember.keys(langMap), function (key) {
@@ -119,15 +135,6 @@ export default Ember.Object.extend(Ember.Evented, {
       });
     }
     return Ember.A(res);
-  }),
-
-  /**
-   * Known contexts
-   * @property knownContexts
-   * @type {Ember.Array.<string>}
-   */
-  knownContexts: computed.ro(function () {
-    return Ember.A([]);
   }),
 
   /**
@@ -180,6 +187,7 @@ export default Ember.Object.extend(Ember.Evented, {
       res._base[name] = protectStringHelper(Ember.String[name]);
     });
     res._base.config = Ember.copy(this.get('config'), true);
+    res._base.config.environment = ENV.environment;
     return res;
   }),
 
@@ -194,7 +202,7 @@ export default Ember.Object.extend(Ember.Evented, {
       unknownProperty: function (key) {
         var locale;
         if (service.get('enabledLocales').contains(key)) {
-          locale = I18nLocale.create({code: key, service: service});
+          locale = I18nTreeLocaleNode.create({nodeName: key, service: service});
           this.set(key, locale);
           return locale;
         }
@@ -207,50 +215,14 @@ export default Ember.Object.extend(Ember.Evented, {
   }),
 
   /**
-   * All node locales
-   * @property nodeLocales
-   * @type {Ember.Array.<I18nLocale>}
+   * The currently selected locale node
+   * @property localeNode
+   * @type {I18nTreeLocaleNode}
    */
-  nodeLocales: computed.ro('currentLocale', 'fallbackLocale', function () {
-    var locales = [], opt = this.getProperties('currentLocale', 'fallbackLocale');
-    if (opt.currentLocale) {
-      locales.push(opt.currentLocale);
-    }
-    if (opt.fallbackLocale && locales.indexOf(opt.fallbackLocale) === -1) {
-      locales.push(opt.fallbackLocale);
-    }
-    return Ember.A(map(locales, function (locale) {
-      return Ember.Object.create({nodeLocale: this.get('locales.' + locale)});
-    }, this));
+  localeNode: computed.ro('currentLocale', function () {
+    return this.get('locales.' + this.get('currentLocale'));
   }),
 
-  /**
-   * Current helpers
-   * @property currentHelpers
-   * @type {Object}
-   */
-  currentHelpers: computed.ro('currentLocale', function () {
-    return this.get('locales.' + this.get('currentLocale') + '.helpers');
-  }),
-
-
-  /**
-   * Handle the load of a context
-   *
-   * @method handleContextLoaded
-   * @param {I18nContext} context
-   */
-  handleContextLoaded: Ember.on('didLoadContext', function (context) {
-    var knownContexts, name;
-    knownContexts = this.get('knownContexts');
-    name = context.get('name');
-    if (!knownContexts.contains(name)) {
-      knownContexts.pushObject(name);
-    }
-    if (!context.get('isError')) {
-      Ember.debug('[i18n] Successfully loaded context `' + name + '` for locale `' + context.get('locale.code') + '`.');
-    }
-  }),
 
   logDebugInfo: Ember.on('init', function () {
     Ember.debug(

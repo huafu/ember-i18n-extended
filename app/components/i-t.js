@@ -1,9 +1,7 @@
 import Ember from 'ember';
 import computed from '../libs/i18n/computed';
-import translatePath from '../libs/i18n/translate-path';
-import ENV from '../config/environment';
+import I18nWithI18bKeyMixin from '../mixins/i18n/with-i18n-key';
 
-var snake = Ember.String.underscore;
 
 /**
  * @class I18nTranslationComponent
@@ -12,7 +10,7 @@ var snake = Ember.String.underscore;
  *
  * @property {I18nService} i18nService
  */
-export default Ember.Component.extend({
+export default Ember.Component.extend(I18nWithI18bKeyMixin, {
   /**
    * @inheritDoc
    */
@@ -30,7 +28,7 @@ export default Ember.Component.extend({
    * @property key
    * @type {string}
    */
-  key: null,
+  key: computed.alias('i18nKey'),
 
   /**
    * The parameters
@@ -82,155 +80,26 @@ export default Ember.Component.extend({
    * @property translation
    * @type {string}
    */
-  translation: computed.ro('possibleTranslations.@each', 'fallbackText', function () {
-    return this.get('possibleTranslations').find(function (t) {
-        return t != null;
-      }) || this.get('fallbackText');
-  }),
-
-  /**
-   * All possible translations
-   * @property possibleTranslations
-   * @type {Ember.Array.<string>}
-   */
-  possibleTranslations: computed.ro(
-    'possibleKeys.@each', 'resolvedParams.@each', 'i18n.nodeLocales.@each',
-    function () {
-      var keys = this.get('possibleKeys'),
-        params = (this.get('resolvedParams') || []),
-        helpers = this.get('i18n.currentHelpers');
-      var translations = this.get('i18n.nodeLocales').reduce(function (previous, objWithNodeLocale) {
-        return keys.reduce(function (previous, key) {
-          var trFunc = objWithNodeLocale.get(translatePath(key));
-          if (typeof trFunc === 'function') {
-            previous.push(trFunc.apply(helpers, params.slice()));
-          }
-          return previous;
-        }, previous);
-      }, []);
-      return Ember.A(translations);
-    }
-  ),
-
-  /**
-   * Fallback text
-   * @property fallbackText
-   * @type {string}
-   */
-  fallbackText: computed.ro('key', function () {
-    if (ENV.environment === 'test' || ENV.environment === 'development') {
-      return this.get('key');
-    }
-    else {
-      return '...';
+  translation: computed.ro('i18nTranslateFunction', 'resolvedParams.@each', function () {
+    var translateFunction, params;
+    translateFunction = this.get('i18nTranslateFunction');
+    params = this.get('resolvedParams');
+    if (translateFunction) {
+      return translateFunction.apply(null, params);
     }
   }),
-
-  /**
-   * The locale node from our service
-   * @property nodeLocale
-   * @type {I18nLocale}
-   */
-  nodeLocale: computed.readOnly('i18n.currentLocale'),
 
   /**
    * The fixed context from the controller
-   * @property fixedContext
+   * @property i18nFixedContext
    * @type {string}
    */
-  fixedContext: computed.oneWay('targetObject.i18nContext'),
+  i18nFixedContext: computed.oneWay('targetObject.i18nContext'),
 
   /**
    * The default context from the controller
-   * @property defaultContext
+   * @property i18nDefaultContext
    * @type {string}
    */
-  defaultContext: computed.oneWay('targetObject.i18nDefaultContext'),
-
-  /**
-   * Possible contexts to use, in order
-   * @property possibleKeys
-   * @type {Ember.Array.<string>}
-   */
-  possibleKeys: computed.ro('defaultContext', 'fixedContext', 'key', function () {
-    var parts, def, res, key = this.get('key');
-    if (!key) {
-      // not even got a key
-      res = [];
-    }
-    else if (key.charAt(0) === '/') {
-      // got a key with a leading `/`
-      res = [key];
-    }
-    else if ((def = this.get('fixedContext'))) {
-      // we got a fixed context
-      res = ['/' + snake(def) + '.' + key];
-    }
-    else {
-      // try to prepend each part of the route
-      res = [];
-      def = this.get('defaultContext');
-      if (def) {
-        def = snake(def);
-        parts = def.split('.');
-        while (parts.length) {
-          res.push('/' + parts.join('.') + '.' + key);
-          parts.pop();
-        }
-      }
-      // from common context?
-      res.push('/' + this.get('i18n.commonContextName') + '.' + key);
-      if (key.indexOf('.') !== -1) {
-        // suppose the coder forgot to put the `/`
-        res.push('/' + key);
-      }
-    }
-    return Ember.A(res);
-  }),
-
-  /**
-   * The i18n service
-   * @property i18n
-   * @type {I18nService}
-   */
-  i18n: computed.ro(function () {
-    return this.i18nService || this.container.lookup('service:i18n');
-  }),
-
-
-  /**
-   * Possible contexts
-   * @property possibleContexts
-   * @type {Ember.Array.<string>}
-   */
-  possibleContexts: computed.ro('possibleKeys.@each', function () {
-    return this.get('possibleKeys').map(function (key) {
-      return key.substr(1).split('.').shift();
-    }, this).uniq();
-  }),
-
-  setupI18n: Ember.on('didInsertElement', function () {
-    this.get('i18n').on('didLoadContext', this, 'handleContextLoaded');
-  }),
-
-  teardownI18n: Ember.on('willDestroyElement', function () {
-    this.get('i18n').off('didLoadContext', this, 'handleContextLoaded');
-  }),
-
-  handleContextLoaded: function (context) {
-    if (this._state === 'inDOM' && !context.get('isError')) {
-      this.scheduleTranslationRefresh();
-    }
-  },
-
-  scheduleTranslationRefresh: Ember.on('didInsertElement', function () {
-    Ember.run.scheduleOnce('afterRender', this, 'refreshTranslation');
-  }),
-
-  refreshTranslation: function () {
-    if (this._state === 'inDOM') {
-      this.notifyPropertyChange('possibleTranslations');
-    }
-  }
-
+  i18nDefaultContext: computed.oneWay('targetObject.i18nDefaultContext')
 });
