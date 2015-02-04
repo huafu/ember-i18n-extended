@@ -5,6 +5,7 @@ import I18nTreeNode from './node';
 import isValidKey from '../is-valid-key';
 import compileTranslation from '../compile-translation';
 
+var fmt = Ember.String.fmt;
 
 var I18nTreeKeyNode;
 
@@ -19,6 +20,7 @@ function getBlankFunctionFor(key, debug) {
   };
   func.isI18nTranslate = true;
   func.isI18nInvalid = true;
+  return func;
 }
 
 /**
@@ -29,7 +31,7 @@ I18nTreeKeyNode = I18nTreeNode.extend({
   /**
    * @inheritDoc
    */
-  forbiddenProperties: ['service', 'locale', 'context'],
+  forbiddenProperties: ['service', 'locale', 'context', 't', 's'],
 
   /**
    * Our children are I18nTreeKeyNode
@@ -124,6 +126,25 @@ I18nTreeKeyNode = I18nTreeNode.extend({
     return translate;
   }),
 
+  /**
+   * Helper method for non async use
+   *
+   * @method t
+   * @param {*} [params...]
+   * @return {string}
+   */
+  t: function () {
+    return this.get('translateFunction').apply(null, arguments);
+  },
+
+  /**
+   * Helper property for use directly in the templates
+   * @property s
+   * @type {string}
+   */
+  s: computed.ro('translateFunction', function () {
+    return this.t();
+  }),
 
   /**
    * @inheritDoc
@@ -137,7 +158,11 @@ I18nTreeKeyNode = I18nTreeNode.extend({
           content = compileTranslation(content, _this.get('service.helpers._base'));
         }
         catch (err) {
-          Ember.warn('[i18n] Error while building key `' + _this.get('nodeFullPath') + '`: ' + err.message);
+          err.message = fmt(
+            '[i18n] Error while building key `%@`: %@.',
+            _this.get('nodeFullPath'), err.message
+          );
+          Ember.warn(err.message);
           return Ember.RSVP.reject(err);
         }
         // read the dependencies

@@ -87,7 +87,10 @@ export default I18nTreeNode.extend({
           'This could happen if you forgot to prepend a full path to a key with `/` in one of your template, ' +
           'or if you yet didn\'t set that key in the appropriate i18n context file.'
         );
-        reject('[i18n] Context `' + _this.get('nodeName') + '` not found for locale `' + _this.get('locale.code') + '`.');
+        reject(new Error(
+          '[i18n] Context `' + _this.get('nodeName') + '` not found for locale `' +
+          _this.get('locale.code') + '`.'
+        ));
       });
       // load the data locally or remotely (whether the locale is bundled or not)
       if (_this.get('locale.isBundled')) {

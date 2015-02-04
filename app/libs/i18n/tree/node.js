@@ -4,15 +4,21 @@ import resolveKeyPath from '../resolve-key-path';
 
 var hasOwn = Object.prototype.hasOwnProperty;
 var filter = Ember.EnumerableUtils.filter;
+var fmt = Ember.String.fmt;
 
+/**
+ * Finds whether an object has only the given property set
+ *
+ * @function hasOnly
+ * @param {Object} object
+ * @param {string} key
+ * @return {boolean}
+ */
 function hasOnly(object, key) {
   var k, has = false;
   for (k in object) {
     if (k === key) {
       has = true;
-    }
-    else {
-      break;
     }
   }
   return has;
@@ -165,15 +171,24 @@ var I18nTreeNode = Ember.Object.extend(Ember.PromiseProxyMixin, {
     var parentNode = this.get('parentNode');
     if (arguments.length > 1) {
       if (oldValue) {
-        throw new Error('[i18n] Can\'t reset `nodeName` for node `' + oldValue + '` at `' + this.get('nodePath') + '`.');
+        throw new Error(fmt(
+          '[i18n] Can\'t reset `nodeName` for node `%@` at `%@`.',
+          oldValue, this.get('nodePath')
+        ));
       }
       if (parentNode && !parentNode.isValidPropertyName(value)) {
-        throw new Error('[i18n] Invalid `nodeName` `' + value + '` at `' + this.get('nodePath') + '`.');
+        throw new Error(fmt(
+          '[i18n] Invalid `nodeName` `%@` at `%@`.',
+          value, this.get('nodePath')
+        ));
       }
     }
     else {
       if (parentNode) {
-        throw new Error('[i18n] Got a node with no `nodeName` at `' + this.get('nodePath') + '`.');
+        throw new Error(fmt(
+          '[i18n] Got a node with no `nodeName` at `%@`.',
+          this.get('nodePath')
+        ));
       }
     }
     return value;
@@ -219,7 +234,10 @@ var I18nTreeNode = Ember.Object.extend(Ember.PromiseProxyMixin, {
         .then(function (content) {
           // be sure to have an object
           if (!content || typeof content !== 'object' || !hasOwn.call(content, nodeName)) {
-            return Ember.RSVP.reject('[i18n] No node `' + nodeName + '` at `' + _this.get('nodePath') + '`.');
+            return Ember.RSVP.reject(new Error(fmt(
+              '[i18n] No node `%@` at `%@`.',
+              nodeName, _this.get('nodePath')
+            )));
           }
           resolve(content[nodeName]);
         })
@@ -233,7 +251,7 @@ var I18nTreeNode = Ember.Object.extend(Ember.PromiseProxyMixin, {
             reject(reason);
           }
         });
-    })
+    }, fmt("[i18n] node lookup: `%@`", this.get('nodeFullPath')))
       .then(function (content) {
         // try to find out if we are a link or if we need to merge with another node
         var linkToKey = _this.get('linkToPropertyName');
@@ -278,7 +296,10 @@ var I18nTreeNode = Ember.Object.extend(Ember.PromiseProxyMixin, {
   unknownProperty: function (key) {
     var node;
     if (!this.isValidPropertyName(key)) {
-      throw new Error('[i18n] Invalid `nodeName` `' + key + '` at `' + this.get('nodePath') + '`.');
+      throw new Error(fmt(
+        '[i18n] Invalid `nodeName` `%@` at `%@`.',
+        key, this.get('nodePath')
+      ));
     }
     node = this.createChildNode({
       parentNode: this,

@@ -5,7 +5,7 @@ import I18nTreeKeyNode from '../../libs/i18n/tree/key-node';
 import ENV from '../../config/environment';
 
 var slice = Array.prototype.slice;
-var snake = Ember.String.underscore;
+var fmt = Ember.String.fmt;
 var RETURN_EMPTY_STRING_FUNCTION = function () {
   return '';
 };
@@ -38,13 +38,13 @@ export default Ember.Mixin.create({
    * @type {string}
    */
   i18nKeyResolvedPath: computed.ro(
-    'i18nFixedContext', 'i18nDefaultContext', 'i18nKey', 'i18n.localeNode',
+    'i18nFixedContext', 'i18nDefaultContext', 'i18nKey', '_i18nService.localeNode',
     function () {
       var context, res, key, baseContext, parentContext, root;
-      root = 'i18n.localeNode';
+      root = '_i18nService.localeNode';
       key = this.get('i18nKey');
       if (key) {
-        context = snake(this.get('i18nFixedContext') || this.get('i18nDefaultContext') || '');
+        context = this.get('i18nFixedContext') || this.get('i18nDefaultContext');
         baseContext = context ? context.split('.').shift() : null;
         parentContext = context ?
           (context.indexOf('.') === -1 ?
@@ -61,7 +61,10 @@ export default Ember.Mixin.create({
           res.path = root + (context ? '.' + context : '') + '.' + res.path;
         }
         if (ENV.LOG_I18N_PATH_RESOLUTION) {
-          Ember.debug('[i18n] Resolved `' + key + '` to `' + res.path + '`.');
+          Ember.debug(fmt(
+            '[i18n] Resolved `%@` to `%@`.',
+            key, res.path
+          ));
         }
         return res.path;
       }
@@ -90,17 +93,20 @@ export default Ember.Mixin.create({
       return node.get('translateFunction');
     }
     else {
-      Ember.warn('[i18n] Trying to get the translate function of `' + node.get('nodeFullPath') + '` which is not a context key.');
+      Ember.warn(fmt(
+        '[i18n] Trying to get the translate function of `%@` which is not a context key.',
+        node.get('nodeFullPath')
+      ));
       return RETURN_EMPTY_STRING_FUNCTION;
     }
   }),
 
   /**
    * The i18n service
-   * @property i18n
+   * @property _i18nService
    * @type {I18nService}
    */
-  i18n: computed.overridable(function () {
+  _i18nService: computed.overridable(function () {
     if (this.i18nService) {
       return this.i18nService;
     }
@@ -125,7 +131,16 @@ export default Ember.Mixin.create({
       });
     }
     else {
-      return Ember.RSVP.reject('[i18n] The i18n key could not be resolved.');
+      return Ember.RSVP.reject(new Error(
+        fmt(
+          '[i18n] The i18n key could not be resolved ' +
+          '(key: `%@`, context: `%@`, default context: `%@` => resolved to: `%@`).',
+          this.get('i18nKey'),
+          this.get('i18nFixedContext'),
+          this.get('i18nDefaultContext'),
+          this.get('i18nKeyResolvedPath')
+        )
+      ));
     }
   }
 

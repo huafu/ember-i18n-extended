@@ -4,6 +4,7 @@ import ENV from '../../config/environment';
 var map = Ember.EnumerableUtils.map;
 var forEach = Ember.EnumerableUtils.forEach;
 var slice = Array.prototype.slice;
+var fmt = Ember.String.fmt;
 
 var SPLITTER = /(^|[^\{])\{([^}]*)}/g;
 var PARSER = /^(?:\$([0-9]+)|([a-z][a-zA-Z0-9]*):(.+)|((?:\/|\.\/|\.\.\/).+))$/;
@@ -197,7 +198,10 @@ function compileTokens(tokens, dependencyPaths, helpers) {
         PARSER.lastIndex = 0;
         match = str.match(PARSER);
         if (!match) {
-          throw new Error('wrong data between `{` and `}`, if you need to output `{`, double it (given: `' + str + '`)');
+          throw new Error(fmt(
+            'wrong data between `{` and `}`, if you need to output `{`, double it (given: `%@`)',
+            str
+          ));
         }
         if (match[1]) {
           // it's a parameter number
@@ -208,7 +212,10 @@ function compileTokens(tokens, dependencyPaths, helpers) {
           helperName = match[2];
           helperParams = match[3];
           if (!helpers[helperName]) {
-            return new Error('unknown i18n helper `' + helperName + '` in `' + str + '`');
+            return new Error(fmt(
+              'unknown i18n helper `%@` in `%@`',
+              helperName, str
+            ));
           }
           pipe.push(compileHelperCall(helperName, helperParams, args));
         }
@@ -230,7 +237,10 @@ function compileTokens(tokens, dependencyPaths, helpers) {
     }
     localSource += 'return ' + pipe.join('+') + ';';
     if (ENV.LOG_I18N_COMPILATIONS) {
-      Ember.debug('[i18n] Compiled i18n: `' + localSource + '`.');
+      Ember.debug(fmt(
+        '[i18n] Compiled i18n: `%@`.',
+        localSource
+      ));
     }
     localSource = new Function(localSource);
   }
