@@ -1,74 +1,14 @@
 /* jshint node: true */
 'use strict';
 var helpers = require('./lib/helpers');
+var commands = require('./lib/commands');
 var fs = require('fs');
+var sysPath = require('path');
 
 /**
  * @class Config
  * @type {{i18n: {enabledLocales: Array.<string>, defaultLocale: string, bundledLocales: Array.<string>, includeCurrencies: boolean, includeLanguages: boolean, includeNativeLanguages: boolean}, l10n: {}}}
  */
-
-/**
- * Parse configuration given an EmberApp
- * @param {EmberApp|EmberAddon} app
- * @return Config
- */
-function parseConfig(app) {
-  var conf = app.project.config(app.env), i18nConf, l10nConf, resConf, defaultLocale;
-  defaultLocale = (app.env === 'development' || app.env === 'test') ? helpers.DEV_LOCALE : 'en';
-  resConf = {
-    i18n: i18nConf = conf.i18n || {},
-    l10n: l10nConf = conf.l10n || {}
-  };
-  // by default include the native language list
-  if (!i18nConf.hasOwnProperty('includeNativeLanguages')) {
-    i18nConf.includeNativeLanguages = true;
-  }
-  i18nConf.path = helpers.I18N_DIR;
-  if (!i18nConf.defaultLocale) {
-    i18nConf.defaultLocale = defaultLocale;
-  }
-  if (!i18nConf.fallbackLocale) {
-    i18nConf.fallbackLocale = i18nConf.defaultLocale;
-  }
-  if (!i18nConf.defaultDateFormat) {
-    i18nConf.defaultDateFormat = 'MEDIUM';
-  }
-  if (!i18nConf.commonContextName) {
-    i18nConf.commonContextName = 'common';
-  }
-  if (!i18nConf.enabledLocales) {
-    i18nConf.enabledLocales = helpers.listProjectLocales(app.project.root, null, false, true);
-  }
-  if (i18nConf.enabledLocales.indexOf(i18nConf.defaultLocale) === -1) {
-    i18nConf.enabledLocales.push(i18nConf.defaultLocale);
-  }
-  if (i18nConf.enabledLocales.indexOf(i18nConf.fallbackLocale) === -1) {
-    i18nConf.enabledLocales.push(i18nConf.fallbackLocale);
-  }
-  if ((app.env === 'development' || app.env === 'test') && i18nConf.enabledLocales.indexOf(helpers.DEV_LOCALE) === -1) {
-    i18nConf.enabledLocales.unshift(helpers.DEV_LOCALE);
-  }
-  // filter and warn about wrong ones
-  i18nConf.enabledLocales = helpers.filterLocales(i18nConf.enabledLocales, true);
-  // if the bundled is not set, set the default locale as bundled
-  if (!i18nConf.bundledLocales) {
-    i18nConf.bundledLocales = [i18nConf.defaultLocale];
-  }
-  else {
-    i18nConf.bundledLocales = i18nConf.bundledLocales.filter(function (locale) {
-      var res = i18nConf.enabledLocales.indexOf(locale) !== -1;
-      if (!res) {
-        console.warn(
-          '[i18n] Locale `' + locale +
-          '` has been removed from the bundled locales since it is not in the list of enabled locales.'
-        );
-      }
-      return res;
-    });
-  }
-  return resConf;
-}
 
 module.exports = {
   name: 'ember-i18n-extended',
@@ -78,9 +18,14 @@ module.exports = {
    */
   selfConfig: null,
 
+
+  includedCommands: function () {
+    return commands;
+  },
+
   included: function (app, parentAddon) {
     var target = app || parentAddon;
-    this.selfConfig = parseConfig(target);
+    this.selfConfig = helpers.parseConfig(target);
   },
 
   contentFor: function (type) {
@@ -146,7 +91,7 @@ module.exports = {
       if (fs.existsSync(root)) {
         trees.push(this.pickFiles(root, {
           srcDir:  '/',
-          files:   ['**/*.js'],
+          files:   ['*.js'],
           destDir: '/i18n/' + locale
         }));
       }
@@ -166,8 +111,20 @@ module.exports = {
       if (fs.existsSync(root)) {
         trees.push(this.pickFiles(root, {
           srcDir:  '/',
-          files:   ['**/*.js'],
+          files:   ['*.js'],
           destDir: '/i18n/' + locale
+        }));
+      }
+    }, this);
+    // then for each enabled locale, add the possible assets from the _assets folder
+    locales = this.selfConfig.i18n.enabledLocales;
+    locales.forEach(function (locale) {
+      var root = sysPath.join(helpers.i18nPath(this.project.root, locale), '_assets');
+      if (fs.existsSync(root)) {
+        trees.push(this.pickFiles(root, {
+          srcDir:  '/',
+          files:   ['**/*'],
+          destDir: '/i18n/' + locale + '/assets'
         }));
       }
     }, this);
