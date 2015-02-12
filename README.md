@@ -1,25 +1,6 @@
 # ember-i18n-extended
 
-This README outlines the details of collaborating on this Ember addon.
+This is a WIP on a powerful, lazy loaded i18n engine for EmberJS, with support for translations in attributes,
+on-the-fly language changing, etc...
 
-## Installation
-
-* `git clone` this repository
-* `npm install`
-* `bower install`
-
-## Running
-
-* `ember server`
-* Visit your app at http://localhost:4200.
-
-## Running Tests
-
-* `ember test`
-* `ember test --server`
-
-## Building
-
-* `ember build`
-
-For more information on using ember-cli, visit [http://www.ember-cli.com/](http://www.ember-cli.com/).
+Please consider this as an extremly alpha version.
