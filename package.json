@@ -1,6 +1,6 @@
 {
   "name": "ember-i18n-extended",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "A powerful i18n engine for EmberJS with deep contexts, lazy-load, on-the-fly language changing and more.",
   "directories": {
     "doc": "doc",
