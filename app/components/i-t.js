@@ -28,7 +28,12 @@ export default Ember.Component.extend(I18nWithI18bKeyMixin, {
    * @property key
    * @type {string}
    */
-  key: computed.alias('i18nKey'),
+  key: null,
+
+  /**
+   * @inheritDoc
+   */
+  i18nKey: computed.oneWay('key'),
 
   /**
    * The parameters

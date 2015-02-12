@@ -15,6 +15,7 @@ function getBlankFunctionFor(key, debug) {
   func = function () {
     return debug;
   };
+  Ember.debug('[i18n] Generating debug function returning `' + debug + '` for key `' + key + '`.')
   func.toString = function () {
     return key;
   };

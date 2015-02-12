@@ -58,7 +58,36 @@ Ember.computed.translated = function (key/*, arg1, arg2*/) {
   ]));
 };
 
-Ember.Controller.reopen({
+Ember.Component.reopen({
+  /**
+   * Our default context
+   * @property i18nDefaultContext
+   * @type {string}
+   */
+  i18nDefaultContext: computed.oneWay('targetObject.i18nDefaultContext'),
+
+  /**
+   * The i18n context
+   * @property i18nContext
+   * @type {string}
+   */
+  i18nContext: computed.oneWay('targetObject.i18nContext'),
+
+  /**
+   * The object to use to get translation nodes
+   * @property i18n
+   * @type {I18nTreeLocaleNode}
+   */
+  i18n: computed.ro('i18nDefaultContext', 'i18nContext', 'i18nService.localeNode', function () {
+    var node = this.get('i18nService.localeNode'), context = this.get('i18nContext') || this.get('i18nDefaultContext');
+    if (context) {
+      node = node.get(context);
+    }
+    return node;
+  })
+});
+
+Ember.ControllerMixin.reopen({
   /**
    * Our default context
    * @property i18nDefaultContext
@@ -71,23 +100,20 @@ Ember.Controller.reopen({
    * @property i18nContext
    * @type {string}
    */
-  i18nContext: computed.overridable('parentController.i18nContext', function () {
-    return this.get('parentController.i18nContext');
-  }),
+  i18nContext: computed.oneWay('parentController.i18nContext'),
 
   /**
    * The object to use to get translation nodes
    * @property i18n
    * @type {I18nTreeLocaleNode}
    */
-  i18n: computed.ro('i18nDefaultContext', 'i18nContext', 'i18nService.localeNode', function(){
-    var node = this.get('i18nService.localeNode'), context = this.get('i18nContext')||this.get('i18nDefaultContext');
-    if(context){
+  i18n: computed.ro('i18nDefaultContext', 'i18nContext', 'i18nService.localeNode', function () {
+    var node = this.get('i18nService.localeNode'), context = this.get('i18nContext') || this.get('i18nDefaultContext');
+    if (context) {
       node = node.get(context);
     }
     return node;
   })
-
 });
 
 Ember.View.reopen({
@@ -102,7 +128,7 @@ Ember.View.reopen({
    * @property i18nContext
    * @type {string}
    */
-  i18nContext: computed.oneWay('controller.i18nContext')
+  i18nContext:        computed.oneWay('controller.i18nContext')
 });
 
 
