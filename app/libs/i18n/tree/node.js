@@ -137,6 +137,12 @@ var I18nTreeNode = Ember.Object.extend(Ember.PromiseProxyMixin, {
     return parentNode ? parentNode.get('rootNode') : this;
   }),
 
+  /**
+   * A shortcut to the root node
+   * @property R
+   * @type {I18nTreeNode}
+   */
+  R: computed.readOnly('rootNode'),
 
   /**
    * The path of this node
