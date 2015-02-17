@@ -4,8 +4,11 @@ import I18nComputedProperty from './computed-property';
 
 var slice = Array.prototype.slice;
 var map = Ember.EnumerableUtils.map;
+var forEach = Ember.EnumerableUtils.forEach;
 var fmt = Ember.String.fmt;
 var snake = Ember.String.underscore;
+
+var WithI18nMixin;
 
 /**
  * Create a computed key that will return the translation of the given key and parameters.
@@ -58,103 +61,90 @@ Ember.computed.translated = function (key/*, arg1, arg2*/) {
   ]));
 };
 
-Ember.Component.reopen({
+WithI18nMixin = Ember.Mixin.create({
   /**
-   * Our default context
+   * The i18nContext from the current route
    * @property i18nDefaultContext
    * @type {string}
+   */
+  i18nDefaultContext: Ember.required(),
+
+  /**
+   * The i18n fixed context
+   * @property i18nContext
+   * @type {string}
+   */
+  i18nContext: Ember.required(),
+
+  /**
+   * The i18n resolved context
+   * @property i18nResolvedContext
+   * @type {string}
+   */
+  i18nResolvedContext: computed('i18nDefaultContext', 'i18nContext', function () {
+    return this.get('i18nContext') || this.get('i18nDefaultContext') || '__no_context_defined__';
+  }),
+
+  /**
+   * The object to use to get translation nodes
+   * @property i18n
+   * @type {I18nTreeLocaleNode}
+   */
+  i18n: computed.ro('i18nResolvedContext', 'i18nService.localeNode', function () {
+    var node = this.get('i18nService.localeNode'), context = this.get('i18nResolvedContext');
+    return node ? node.get(context) : null;
+  })
+});
+
+Ember.ControllerMixin.reopen(WithI18nMixin, {
+  /**
+   * @inheritDoc
+   */
+  i18nDefaultContext: computed.oneWay('parentController.i18nDefaultContext'),
+
+  /**
+   * @inheritDoc
+   */
+  i18nContext: computed.oneWay('parentController.i18nContext')
+});
+
+Ember.Component.reopen(WithI18nMixin, {
+  /**
+   * @inheritDoc
    */
   i18nDefaultContext: computed.oneWay('targetObject.i18nDefaultContext'),
 
   /**
-   * The i18n context
-   * @property i18nContext
-   * @type {string}
+   * @inheritDoc
    */
-  i18nContext: computed.oneWay('targetObject.i18nContext'),
-
-  /**
-   * The object to use to get translation nodes
-   * @property i18n
-   * @type {I18nTreeLocaleNode}
-   */
-  i18n: computed.ro('i18nDefaultContext', 'i18nContext', 'i18nService.localeNode', function () {
-    var node = this.get('i18nService.localeNode'), context = this.get('i18nContext') || this.get('i18nDefaultContext');
-    if (context) {
-      node = node.get(context);
-    }
-    return node;
-  })
+  i18nContext: computed.oneWay('targetObject.i18nContext')
 });
 
-Ember.ControllerMixin.reopen({
-  /**
-   * Our default context
-   * @property i18nDefaultContext
-   * @type {string}
-   */
-  i18nDefaultContext: null,
 
+Ember.View.reopen(WithI18nMixin, {
   /**
-   * The i18n context
-   * @property i18nContext
-   * @type {string}
-   */
-  i18nContext: computed.oneWay('parentController.i18nContext'),
-
-  /**
-   * The object to use to get translation nodes
-   * @property i18n
-   * @type {I18nTreeLocaleNode}
-   */
-  i18n: computed.ro('i18nDefaultContext', 'i18nContext', 'i18nService.localeNode', function () {
-    var node = this.get('i18nService.localeNode'), context = this.get('i18nContext') || this.get('i18nDefaultContext');
-    if (context) {
-      node = node.get(context);
-    }
-    return node;
-  })
-});
-
-Ember.View.reopen({
-  /**
-   * Get our default context from our controller if any
-   * @property i18nDefaultContext
-   * @type {string}
+   * @inheritDoc
    */
   i18nDefaultContext: computed.oneWay('controller.i18nDefaultContext'),
+
   /**
-   * Get our context from our controller if any
-   * @property i18nContext
-   * @type {string}
+   * @inheritDoc
    */
-  i18nContext:        computed.oneWay('controller.i18nContext')
+  i18nContext: computed.oneWay('controller.i18nContext')
 });
 
-
-/**
- * @class I18nExtendedRouteOverrides
- * @extension I18nExtendedRouteOverrides
- * @extends Ember.Route
- */
-Ember.Route.reopen({
-  _actions: {
-    /**
-     * Set the controller's i18n context as this route name if not yet set
-     *
-     * @method i18nExtendedSetupDefaultContext
-     */
-    i18nExtendedSetupDefaultContext: function () {
-      var ctrl = this.controllerFor(this.controllerName || this.routeName);
-      if (!ctrl.get('i18nDefaultContext')) {
-        ctrl.set('i18nDefaultContext', snake(this.routeName || this.controllerName));
-      }
-    }
-  }
-});
 
 Ember.Router.reopen({
   i18nExtendedDidTransition: Ember.on('didTransition', function () {
-    this.send('i18nExtendedSetupDefaultContext');
+    var handlerInfos = this.router.currentHandlerInfos.slice();
+    handlerInfos.reverse();
+    forEach(handlerInfos, function (handler) {
+      var controller, name;
+      name = handler.name;
+      controller = handler.handler.controller;
+      if (controller && !controller.cacheFor('i18nDefaultContext')) {
+        controller.set('i18nDefaultContext', snake(name));
+      }
+    });
   })
 });
