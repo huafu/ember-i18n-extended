@@ -8,6 +8,8 @@ import ENV from '../config/environment';
 var forEach = Ember.EnumerableUtils.forEach;
 var slice = [].slice;
 
+export var UNDEFINED_CONTEXT = '__no_context_defined__';
+
 /**
  * Used to protect a string helper from being called with wrong arguments
  * @param helper
@@ -239,6 +241,22 @@ export default Ember.Object.extend(Ember.Evented, {
         return node.get('translateFunction').apply(null, args);
       });
   },
+
+  /**
+   * Same as translate, but if the translation isn't found it returns a fallback value
+   *
+   * @method translateNoError
+   * @param {string} key
+   * @param {*} [args...]
+   * @return {Promise}
+   */
+  translateNoError: function (key) {
+    var _this = this;
+    return this.translate.apply(this, arguments).catch(function () {
+      return _this.get('showKeyWhenMissing') ? key : '';
+    });
+  },
+
 
   /**
    * Synchronized version of `translate`. You'll always get a result, but if the context files are

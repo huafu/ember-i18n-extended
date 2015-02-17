@@ -2,6 +2,8 @@ import Ember from 'ember';
 import computed from './computed';
 import I18nComputedProperty from './computed-property';
 
+import {UNDEFINED_CONTEXT} from '../../services/i18n';
+
 var slice = Array.prototype.slice;
 var map = Ember.EnumerableUtils.map;
 var forEach = Ember.EnumerableUtils.forEach;
@@ -82,7 +84,7 @@ WithI18nMixin = Ember.Mixin.create({
    * @type {string}
    */
   i18nResolvedContext: computed('i18nDefaultContext', 'i18nContext', function () {
-    return this.get('i18nContext') || this.get('i18nDefaultContext') || '__no_context_defined__';
+    return this.get('i18nContext') || this.get('i18nDefaultContext') || UNDEFINED_CONTEXT;
   }),
 
   /**

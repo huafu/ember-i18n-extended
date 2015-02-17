@@ -4,6 +4,8 @@ import computed from '../computed';
 import I18nTreeNode from './node';
 import I18nTreeKeyNode from './key-node';
 
+import {UNDEFINED_CONTEXT} from '../../../services/i18n';
+
 /**
  * @class I18nTreeContextNode
  * @extends I18nTreeNode
@@ -81,16 +83,22 @@ export default I18nTreeNode.extend({
       var modulePath, contextNotFound;
       // to be called when the context is not found
       contextNotFound = Ember.run.bind(null, function () {
-        Ember.warn(
-          '[i18n] Context `' + _this.get('nodeName') + '` not found for locale `' +
-          _this.get('locale.code') + '`. ' +
-          'This could happen if you forgot to prepend a full path to a key with `/` in one of your template, ' +
-          'or if you yet didn\'t set that key in the appropriate i18n context file.'
-        );
-        reject(new Error(
-          '[i18n] Context `' + _this.get('nodeName') + '` not found for locale `' +
-          _this.get('locale.code') + '`.'
-        ));
+        var context = _this.get('nodeName');
+        if (context !== UNDEFINED_CONTEXT) {
+          Ember.warn(
+            '[i18n] Context `' + _this.get('nodeName') + '` not found for locale `' +
+            _this.get('locale.code') + '`. ' +
+            'This could happen if you forgot to prepend a full path to a key with `/` in one of your template, ' +
+            'or if you yet didn\'t set that key in the appropriate i18n context file.'
+          );
+          reject(new Error(
+            '[i18n] Context `' + _this.get('nodeName') + '` not found for locale `' +
+            _this.get('locale.code') + '`.'
+          ));
+        }
+        else {
+          reject(new Error('[i18n] Wrong or unresolved context.'));
+        }
       });
       // load the data locally or remotely (whether the locale is bundled or not)
       if (_this.get('locale.isBundled')) {
