@@ -50,7 +50,7 @@ Ember.computed.translated = function (/*key, arg1, arg2*/) {
         this._i18nComputedTranslated[name] = object =
           I18nComputedProperty.create({
             owner:     this,
-            i18nKey:   keyIsPath ? key : null,
+            i18nKey:   keyIsPath ? null : key,
             container: this.container
           });
         // it's a path to a key and not directly the key, bind it
