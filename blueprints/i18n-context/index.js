@@ -2,7 +2,9 @@ var helpers = require('../../lib/helpers');
 var SilentError = require('../../node_modules/ember-cli/lib/errors/silent');
 
 function checkLocale(options) {
+  var SilentError;
   if (options.locale && !helpers.isValidLocale(options.locale)) {
+    SilentError = require(options.project.root + '/node_modules/ember-cli/lib/errors/silent');
     throw new SilentError('Invalid locale `' + options.locale + '`.');
   }
 }

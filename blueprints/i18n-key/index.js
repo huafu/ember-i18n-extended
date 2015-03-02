@@ -1,8 +1,11 @@
 var helpers = require('../../lib/helpers');
 var ContextFile = require('../../lib/context-file');
 var contextBlueprint = require('../i18n-context');
-var SilentError = require('../../node_modules/ember-cli/lib/errors/silent');
 var fs = require('fs');
+
+function silentErrorClass(root) {
+  return require(root + '/node_modules/ember-cli/lib/errors/silent');
+}
 
 var self;
 
@@ -23,9 +26,10 @@ module.exports = self = {
   ]),
 
   beforeInstall: function (options) {
-    var locals;
+    var locals, SilentError;
     contextBlueprint.beforeInstall(options);
     if (options.entity.name.indexOf('.') === -1) {
+      SilentError = silentErrorClass(options.project.root);
       throw new SilentError(
         'You must prepend the key with its context name like `the_context.' + options.entity.name + '`.'
       );
@@ -33,9 +37,10 @@ module.exports = self = {
   },
 
   beforeUninstall: function (options) {
-    var locals;
+    var locals, SilentError;
     contextBlueprint.beforeUninstall(options);
     if (options.entity.name.indexOf('.') === -1) {
+      SilentError = silentErrorClass(options.project.root);
       throw new SilentError(
         'You must prepend the key with its context name like `the_context.' + options.entity.name + '`.'
       );
@@ -55,12 +60,13 @@ module.exports = self = {
   },
 
   afterInstall: function (options) {
-    var locals = self.locals(options), ctx = locals.contextFile;
+    var locals = self.locals(options), ctx = locals.contextFile, SilentError;
     if (!options.dryRun) {
       try {
         ctx.addKey(locals.keyFullPath, locals.text, locals.override);
       }
       catch (e) {
+        SilentError = silentErrorClass(options.project.root);
         throw new SilentError(e.message);
       }
       ctx.save();
@@ -68,12 +74,13 @@ module.exports = self = {
   },
 
   afterUninstall: function (options) {
-    var locals = self.locals(options), ctx = locals.contextFile;
+    var locals = self.locals(options), ctx = locals.contextFile, SilentError;
     if (!options.dryRun && ctx.fileExists()) {
       try {
         ctx.removeKey(locals.keyFullPath, locals.override);
       }
       catch (e) {
+        SilentError = silentErrorClass(options.project.root);
         throw new SilentError(e.message);
       }
       ctx.save();
