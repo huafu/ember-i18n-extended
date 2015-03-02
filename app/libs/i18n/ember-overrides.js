@@ -18,18 +18,22 @@ var WithI18nMixin;
  * The object owning the computed property must have a container set so that this utility can find
  * the i18n service.
  *
+ * @param {boolean} [keyIsPath=false] Whether the given key is a path to a property holding the key or the key itself
  * @param {string} key The i18n key
  * @param {string} [pathToArgument...]
  * @return {Ember.ComputedProperty}
  */
-Ember.computed.translated = function (key/*, arg1, arg2*/) {
-  var args = slice.call(arguments, 1);
-  var name = key.replace(/\./g, 'T');
+Ember.computed.translated = function (/*key, arg1, arg2*/) {
+  var args, name, keyIsPath, key;
+  args = slice.call(arguments);
+  keyIsPath = (typeof args[0] === 'boolean') ? args.shift() : false;
+  key = args.shift();
+  name = (keyIsPath ? 'P' : 'K') + '$' + key.replace(/\./g, 'T');
   // create our computed property
   return Ember.computed.apply(null, args.concat([
     '_i18nComputedTranslated.' + name + '.i18nTranslateFunction',
     function () {
-      var translate, collectedArgs, owner;
+      var translate, collectedArgs, owner, object;
       // create the container if it does not exist
       if (!this._i18nComputedTranslated) {
         if (!this.container || !(this.container instanceof Ember.Container)) {
@@ -43,12 +47,16 @@ Ember.computed.translated = function (key/*, arg1, arg2*/) {
       }
       // create our required object after extending it
       if (!this._i18nComputedTranslated[name]) {
-        this._i18nComputedTranslated[name] =
+        this._i18nComputedTranslated[name] = object =
           I18nComputedProperty.create({
             owner:     this,
-            i18nKey:   key,
+            i18nKey:   keyIsPath ? key : null,
             container: this.container
           });
+        // it's a path to a key and not directly the key, bind it
+        if (keyIsPath) {
+          Ember.bind(object, 'i18nKey', 'owner.' + key);
+        }
       }
       // finally return the data from our created object
       translate = this._i18nComputedTranslated[name].get('i18nTranslateFunction');
