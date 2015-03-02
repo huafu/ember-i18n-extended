@@ -71,7 +71,7 @@ module.exports = self = {
     var locals = self.locals(options), ctx = locals.contextFile;
     if (!options.dryRun && ctx.fileExists()) {
       try {
-        ctx.removeKey(locals.keyFullPath, locals.text, locals.override);
+        ctx.removeKey(locals.keyFullPath, locals.override);
       }
       catch (e) {
         throw new SilentError(e.message);

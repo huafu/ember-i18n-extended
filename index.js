@@ -1,7 +1,7 @@
 /* jshint node: true */
 'use strict';
 var helpers = require('./lib/helpers');
-var commands = require('./lib/commands');
+//var commands = require('./lib/commands');
 var fs = require('fs');
 var sysPath = require('path');
 
@@ -19,9 +19,9 @@ module.exports = {
   selfConfig: null,
 
 
-  includedCommands: function () {
+  /*includedCommands: function () {
     return commands;
-  },
+  },*/
 
   included: function (app, parentAddon) {
     var target = app || parentAddon;
