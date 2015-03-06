@@ -95,7 +95,7 @@ export default Ember.Mixin.create({
     else {
       Ember.warn(fmt(
         '[i18n] Trying to get the translate function of `%@` which is not a context key.',
-        node.get('nodeFullPath')
+        node ? node.get('nodeFullPath') : this.get('i18nKeyResolvedPath')
       ));
       return RETURN_EMPTY_STRING_FUNCTION;
     }
