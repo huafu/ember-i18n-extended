@@ -144,6 +144,12 @@ Ember.View.reopen(WithI18nMixin, {
   i18nContext: computed.oneWay('controller.i18nContext')
 });
 
+if (window.DS) {
+  DS.Model.reopen({
+    i18n: computed.readOnly('i18nService.localeNode')
+  })
+}
+
 
 Ember.Router.reopen({
   i18nExtendedDidTransition: Ember.on('didTransition', function () {
