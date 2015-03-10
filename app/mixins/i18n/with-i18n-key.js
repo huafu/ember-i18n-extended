@@ -6,6 +6,8 @@ import ENV from '../../config/environment';
 
 var slice = Array.prototype.slice;
 var fmt = Ember.String.fmt;
+var map = Ember.EnumerableUtils.map;
+var RSVP = Ember.RSVP;
 var RETURN_EMPTY_STRING_FUNCTION = function () {
   return '';
 };
@@ -88,7 +90,19 @@ export default Ember.Mixin.create({
    * @type {Function}
    */
   i18nTranslateFunction: computed.ro('i18nKeyNode.translateFunction', function () {
-    var node = this.get('i18nKeyNode');
+    var node, key;
+    if (Ember.testing) {
+      key = (this.get('i18nKeyResolvedPath') || '').replace(/^_i18nService\.localeNode\./, '');
+      return function () {
+        return [key].concat(map(slice.call(arguments), function (value) {
+          if (value == null || value === false) {
+            return '';
+          }
+          return String(value);
+        })).join('|');
+      }
+    }
+    node = this.get('i18nKeyNode');
     if (node instanceof I18nTreeKeyNode) {
       return node.get('translateFunction');
     }
@@ -123,15 +137,20 @@ export default Ember.Mixin.create({
    * @return {Promise}
    */
   i18nTranslate: function () {
-    var node = this.get('i18nKeyNode');
-    var args = slice.call(arguments);
+    var node, args, method;
+    args = slice.call(arguments);
+    if (Ember.testing) {
+      method = this.get('i18nTranslateFunction');
+      return RSVP.resolve(method.call(args));
+    }
+    node = this.get('i18nKeyNode');
     if (node) {
       return node.then(function () {
         return node.get('translateFunction').apply(null, args);
       });
     }
     else {
-      return Ember.RSVP.reject(new Error(
+      return RSVP.reject(new Error(
         fmt(
           '[i18n] The i18n key could not be resolved ' +
           '(key: `%@`, context: `%@`, default context: `%@` => resolved to: `%@`).',

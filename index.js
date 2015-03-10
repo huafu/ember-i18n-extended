@@ -20,8 +20,8 @@ module.exports = {
 
 
   /*includedCommands: function () {
-    return commands;
-  },*/
+   return commands;
+   },*/
 
   included: function (app, parentAddon) {
     var target = app || parentAddon;
@@ -96,6 +96,16 @@ module.exports = {
         }));
       }
     }, this);
+
+    // include our test helpers
+    if (this.app.env === 'development' || this.app.env === 'test') {
+      trees.push(this.pickFiles(this.treeGenerator(sysPath.join(__dirname, 'lib', 'tests')), {
+        srcDir:  '/',
+        files:   ['**/*.js'],
+        destDir: '/tests/helpers'
+      }));
+    }
+
     return this.mergeTrees(trees);
   },
 
@@ -130,4 +140,5 @@ module.exports = {
     }, this);
     return this.mergeTrees(trees);
   }
+
 };

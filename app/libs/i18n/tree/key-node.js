@@ -6,6 +6,8 @@ import isValidKey from '../is-valid-key';
 import compileTranslation from '../compile-translation';
 
 var fmt = Ember.String.fmt;
+var map = Ember.EnumerableUtils.map;
+var slice = [].slice;
 
 var I18nTreeKeyNode;
 
@@ -109,7 +111,19 @@ I18nTreeKeyNode = I18nTreeNode.extend({
    * @type {Function}
    */
   translateFunction: computed.ro('nodeValue', function () {
-    var method = this.get('nodeValue'), helpers, translate, key, debug;
+    var method, helpers, translate, key, debug;
+    if (Ember.testing) {
+      key = (this.get('nodeFullPath') || '');
+      return function () {
+        return [key].concat(map(slice.call(arguments), function (value) {
+          if (value == null || value === false) {
+            return '';
+          }
+          return String(value);
+        })).join('|');
+      }
+    }
+    method = this.get('nodeValue');
     if (method && method.isI18nBundle) {
       helpers = this.get('locale.helpers');
       translate = function () {

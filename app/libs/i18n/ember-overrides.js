@@ -1,6 +1,7 @@
 import Ember from 'ember';
 import computed from './computed';
 import I18nComputedProperty from './computed-property';
+import ENV from '../../config/environment';
 
 import {UNDEFINED_CONTEXT} from '../../services/i18n';
 
@@ -36,7 +37,7 @@ Ember.computed.translated = function (/*key, arg1, arg2*/) {
       var translate, collectedArgs, owner, object;
       // create the container if it does not exist
       if (!this._i18nComputedTranslated) {
-        if (!this.container || !(this.container instanceof Ember.Container)) {
+        if (!Ember.testing && (!this.container || !(this.container instanceof Ember.Container))) {
           throw new Error(fmt(
             '[i18n] `Ember.computed.translated` must be used on an object having' +
             ' the application container set on the `container` property (defined in `%@` for i18n key `%@`).',
@@ -45,7 +46,7 @@ Ember.computed.translated = function (/*key, arg1, arg2*/) {
         }
         this._i18nComputedTranslated = Object.create(null);
       }
-      // create our required object after extending it
+      // create our required object
       if (!this._i18nComputedTranslated[name]) {
         this._i18nComputedTranslated[name] = object =
           I18nComputedProperty.create({
