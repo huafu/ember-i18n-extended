@@ -7,7 +7,7 @@ var sysPath = require('path');
 
 /**
  * @class Config
- * @type {{i18n: {enabledLocales: Array.<string>, defaultLocale: string, bundledLocales: Array.<string>, includeCurrencies: boolean, includeLanguages: boolean, includeNativeLanguages: boolean}, l10n: {}}}
+ * @type {{i18n: {enabledLocales: Array.<string>, defaultLocale: string, bundledLocales: Array.<string>, includeCurrencies: boolean, includeLanguages: boolean, includeCountries: boolean, includeNativeLanguages: boolean}, l10n: {}}}
  */
 
 module.exports = {
@@ -73,6 +73,9 @@ module.exports = {
     }
     if (this.selfConfig.i18n.includeLanguages) {
       localFiles.push('' + FILES.LOCALIZED.LANGUAGE_MAP);
+    }
+    if (this.selfConfig.i18n.includeCountries) {
+      localFiles.push('' + FILES.LOCALIZED.COUNTRY_MAP);
     }
 
     // add for each enabled locale the core files

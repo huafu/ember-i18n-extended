@@ -1,3 +1,4 @@
+/* globals require */
 import Ember from 'ember';
 import ENV from '../../../config/environment';
 import I18nTreeNode from './node';
@@ -14,7 +15,7 @@ export default I18nTreeNode.extend({
   /**
    * @inheritDoc
    */
-  forbiddenProperties: ['service', 'code', 'helpers', 'modulePath', 'baseUrl', 'isBundled'],
+  forbiddenProperties: ['service', 'code', 'helpers', 'modulePath', 'baseUrl', 'isBundled', 'currenciesByCode', 'countriesByCode'],
 
   /**
    * Our children are I18nTreeContextNode
@@ -82,5 +83,31 @@ export default I18nTreeNode.extend({
    */
   isBundled: computed.ro('code', 'service.bundledLocales', function () {
     return this.get('service.bundledLocales').contains(this.get('code'));
+  }),
+
+  /**
+   * All currencies indexed by their code
+   * @property currenciesByCode
+   * @type {Object.<{symbol: string, name: string, symbol_native: string, decimal_digits: number, rounding: number, code: string, name_plural: string}>}
+   */
+  currenciesByCode: computed.ro('service.dataFilesPath', function () {
+    var path = this.get('service.dataFilesPath') + '/currency-map';
+    if (require.entries[path]) {
+      return require(path)['default'];
+    }
+  }),
+
+  /**
+   * All countries indexed by their code
+   * @property countriesByCode
+   * @type {Object.<string>}
+   */
+  countriesByCode: computed.ro('service.dataFilesPath', function () {
+    var path = this.get('service.dataFilesPath') + '/country-map';
+    if (require.entries[path]) {
+      return require(path)['default'];
+    }
   })
+
+
 });

@@ -226,6 +226,21 @@ export default Ember.Object.extend(Ember.Evented, {
   }),
 
   /**
+   * Currencies by code
+   * @property currenciesByCode
+   * @type {Object.<{symbol: string, name: string, symbol_native: string, decimal_digits: number, rounding: number, code: string, name_plural: string}>}
+   */
+  currenciesByCode: computed.readOnly('localeNode.currenciesByCode'),
+
+  /**
+   * Countries by code
+   * @property countriesByCode
+   * @type {Object.<string>}
+   */
+  countriesByCode: computed.readOnly('localeNode.countriesByCode'),
+
+
+  /**
    * Translates the given i18n key full path using optional given arguments
    *
    * @method translate
