@@ -90,8 +90,8 @@ export default I18nTreeNode.extend({
    * @property currenciesByCode
    * @type {Object.<{symbol: string, name: string, symbol_native: string, decimal_digits: number, rounding: number, code: string, name_plural: string}>}
    */
-  currenciesByCode: computed.ro('service.dataFilesPath', function () {
-    var path = this.get('service.dataFilesPath') + '/currency-map';
+  currenciesByCode: computed.ro('modulePath', function () {
+    var path = this.get('modulePath') + '/_core/currency-map';
     if (require.entries[path]) {
       return require(path)['default'];
     }
@@ -102,8 +102,8 @@ export default I18nTreeNode.extend({
    * @property countriesByCode
    * @type {Object.<string>}
    */
-  countriesByCode: computed.ro('service.dataFilesPath', function () {
-    var path = this.get('service.dataFilesPath') + '/country-map';
+  countriesByCode: computed.ro('modulePath', function () {
+    var path = this.get('modulePath') + '/_core/country-map';
     if (require.entries[path]) {
       return require(path)['default'];
     }
